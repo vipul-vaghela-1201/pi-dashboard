@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Box } from "@mui/material";
-import TopBar from "../Components/TopBar";
+import TopBar from "../components/Topbar_main";
 
 const MainLayout = () => {
   return (
