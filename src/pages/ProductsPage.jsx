@@ -257,7 +257,35 @@ const ProductsPage = () => {
         }}
       />
 
-      {viewMode === 'grid' ? (
+      {viewMode === 'block' ? (
+        <ProductsBlockView
+          products={filteredProducts}
+          selectedProducts={selectedProducts}
+          onSelectProduct={handleSelectProduct}
+          onEditProduct={handleOpenModal}
+          onDeleteProduct={handleDeleteProduct}
+          onAddToCart={handleAddToCart}
+          onOpenSales={handleOpenSales}
+          isAllInventoryView={selectedInventory === 'All Inventory'}
+          isLoading={false} // Set to true when loading
+          error={null} // Set to error object if there's an error
+        />
+      ) : (
+        <ProductsGridView
+          products={filteredProducts}
+          selectedProducts={selectedProducts}
+          onSelectProduct={handleSelectProduct}
+          onEditProduct={handleOpenModal}
+          onDeleteProduct={handleDeleteProduct}
+          onAddToCart={handleAddToCart}
+          onOpenSales={handleOpenSales}
+          isAllInventoryView={selectedInventory === 'All Inventory'}
+          isLoading={false} // Set to true when loading
+          error={null} // Set to error object if there's an error
+        />
+      )}
+
+      {/* {viewMode === 'grid' ? (
         <ProductsGridView
           products={filteredProducts}
           selectedProducts={selectedProducts}
@@ -271,6 +299,23 @@ const ProductsPage = () => {
       ) : (
         <ProductsBlockView />
       )}
+
+      {viewMode === 'block' ? (
+        <ProductsBlockView
+          products={filteredProducts}
+          selectedProducts={selectedProducts}
+          onSelectProduct={handleSelectProduct}
+          onEditProduct={handleOpenModal}
+          onDeleteProduct={handleDeleteProduct}
+          onAddToCart={handleAddToCart}
+          onOpenSales={handleOpenSales}
+          isAllInventoryView={selectedInventory === 'All Inventory'}
+          isLoading={false} // Set to true when loading
+          error={null} // Set to error object if there's an error
+        />
+      ) : (
+        <ProductsGridView/>
+      )} */}
 
       <ProductFormModal
         open={openModal}

@@ -13,7 +13,9 @@ import {
   Typography,
   Avatar,
   Button,
-  ButtonGroup
+  ButtonGroup,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -26,17 +28,17 @@ import {
 } from '@mui/icons-material';
 
 const ProductRow = ({
-  product,
-  isSelected,
-  onSelect,
-  onEdit,
-  onDelete,
-  onAddToCart,
-  onOpenSales,
-  showInventory = false // Add this prop
+  product = {},
+  isSelected = false,
+  onSelect = () => {},
+  onEdit = () => {},
+  onDelete = () => {},
+  onAddToCart = () => {},
+  onOpenSales = () => {},
+  showInventory = false
 }) => {
   const [expanded, setExpanded] = React.useState(false);
-  const availableStock = product.stock - product.details.totalSold;
+  const availableStock = (product.stock || 0) - ((product.details?.totalSold) || 0);
   const isSoldOut = availableStock <= 0;
 
   return (
@@ -71,11 +73,14 @@ const ProductRow = ({
               src={product.image} 
               alt={product.name}
               sx={{ width: 56, height: 56, mr: 2 }}
+              onError={(e) => {
+                e.target.src = '/placeholder-product.png';
+              }}
             />
-            <Typography variant="body1">{product.name}</Typography>
+            <Typography variant="body1">{product.name || 'Unnamed Product'}</Typography>
           </Box>
         </TableCell>
-        <TableCell>${product.price.toFixed(2)}</TableCell>
+        <TableCell>${(product.price || 0).toFixed(2)}</TableCell>
         <TableCell>
           <Typography color={availableStock > 0 ? 'text.primary' : 'error'}>
             {availableStock} available
@@ -84,17 +89,17 @@ const ProductRow = ({
         <TableCell>
           <ButtonGroup size="small">
             <Button 
-              onClick={() => onAddToCart(product.id, product.inCart - 1)}
-              disabled={product.inCart <= 0 || isSoldOut}
+              onClick={() => onAddToCart(product.id, (product.inCart || 0) - 1)}
+              disabled={(product.inCart || 0) <= 0 || isSoldOut}
             >
               <RemoveIcon />
             </Button>
             <Button disabled>
-              {product.inCart}
+              {product.inCart || 0}
             </Button>
             <Button 
-              onClick={() => onAddToCart(product.id, product.inCart + 1)}
-              disabled={product.inCart >= availableStock || isSoldOut}
+              onClick={() => onAddToCart(product.id, (product.inCart || 0) + 1)}
+              disabled={(product.inCart || 0) >= availableStock || isSoldOut}
             >
               <AddIcon />
             </Button>
@@ -128,12 +133,12 @@ const ProductRow = ({
               </Typography>
               <Box sx={{ display: 'flex', gap: 4 }}>
                 <Box>
-                  <Typography variant="body2">In Transit: {product.details.inTransit}</Typography>
-                  <Typography variant="body2">Delivered: {product.details.delivered}</Typography>
+                  <Typography variant="body2">In Transit: {product.details?.inTransit || 0}</Typography>
+                  <Typography variant="body2">Delivered: {product.details?.delivered || 0}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2">Total Sold: {product.details.totalSold}</Typography>
-                  <Typography variant="body2">Delivering Today: {product.details.deliveringToday}</Typography>
+                  <Typography variant="body2">Total Sold: {product.details?.totalSold || 0}</Typography>
+                  <Typography variant="body2">Delivering Today: {product.details?.deliveringToday || 0}</Typography>
                 </Box>
               </Box>
             </Box>
@@ -145,15 +150,44 @@ const ProductRow = ({
 };
 
 const ProductsGridView = ({
-  products,
-  selectedProducts,
-  onSelectProduct,
-  onEditProduct,
-  onDeleteProduct,
-  onAddToCart,
-  onOpenSales,
-  isAllInventoryView = false
+  products = [],
+  selectedProducts = [],
+  onSelectProduct = () => {},
+  onEditProduct = () => {},
+  onDeleteProduct = () => {},
+  onAddToCart = () => {},
+  onOpenSales = () => {},
+  isAllInventoryView = false,
+  isLoading = false,
+  error = null
 }) => {
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Alert severity="error">
+          Failed to load products: {error.message}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!products || products.length === 0) {
+    return (
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6">No products found</Typography>
+        <Typography variant="body1">Add a product to get started</Typography>
+      </Box>
+    );
+  }
+
   return (
     <TableContainer component={Box}>
       <Table aria-label="products table">

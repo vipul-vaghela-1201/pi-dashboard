@@ -342,7 +342,7 @@ const DashboardPage = () => {
                 trend: null
               }
             ].map((metric, index) => (
-              <Grid item xs={12} sm={6} md={3} lg={2.4} xl={2} width='18.85%' key={index}>
+              <Grid item xs={12} sm={6} md={3} lg={2.4} xl={2} width='18.45%' key={index}>
                 <MetricCard {...metric} />
               </Grid>
             ))}
