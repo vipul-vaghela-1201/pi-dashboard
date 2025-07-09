@@ -1,0 +1,30 @@
+/* src/components/Editor.module.css */
+.editorContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  border-bottom: 1px solid #e1e1e1;
+  min-height: 0; /* Allows proper shrinking */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.title {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.editor {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: none;
+  background-color: #f8f8f8;
+  width: 100%;
+}

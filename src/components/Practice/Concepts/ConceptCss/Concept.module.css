@@ -1,0 +1,38 @@
+/* src/components/concepts/Concept.module.css */
+.conceptContainer {
+  display: flex;
+  height: 100vh; /* Full viewport height */
+  width: 100%; /* Full viewport width */
+  overflow: hidden;
+}
+
+.codeArea {
+  flex: 9; /* Increased from 2 to give more space */
+  display: flex;
+  flex-direction: column;
+  min-width: 950px; /* Crucial for flex items to shrink properly */
+  width: 100%; /* Ensure it fills available space */
+}
+
+.codeArea > * {
+  width: 100%; /* Force all direct children to fill width */
+}
+
+.runButtonContainer {
+  padding: 10px 15px;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+.runButton {
+  padding: 8px 15px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.runButton:hover {
+  background-color: #2980b9;
+}

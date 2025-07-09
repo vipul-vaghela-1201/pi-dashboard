@@ -1,0 +1,32 @@
+/* src/components/Result.module.css */
+.resultContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  min-height: 0; /* Allows proper shrinking */
+}
+
+.title {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.resultContent {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #f8f8f8;
+  overflow: auto;
+}
+
+.error {
+  color: #e74c3c;
+}
+
+.output {
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+}

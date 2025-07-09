@@ -1,0 +1,33 @@
+/* src/components/Explanation.module.css */
+.explanationContainer {
+  flex: 1;  /* Changed from width: 300px */
+  min-width: 300px; /* Minimum width but can expand */
+  max-width: 90%; /* Maximum width relative to parent */
+  padding: 15px;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+  border-left: 1px solid #e1e1e1;
+}
+
+.title {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.content {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.content pre {
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.content code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
