@@ -1,294 +1,265 @@
+// ProductsBlockView.jsx
 import React, { useState } from 'react';
 import {
   Box,
   Grid,
   Card,
   CardContent,
-  CardMedia,
+  Avatar,
   Typography,
   Checkbox,
-  IconButton,
   Button,
   ButtonGroup,
-  Divider,
-  Chip,
-  Badge,
+  Collapse,
   CircularProgress,
   Alert,
-  CardActionArea
+  Paper,
+  Chip,
+  Divider,
+  IconButton
 } from '@mui/material';
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   Add as AddIcon,
   Remove as RemoveIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
   LocalShipping as SalesIcon,
-  ShoppingCart as CartIcon
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
-
-// Styled components for flip animation
-const FlipCard = styled('div')({
-  backgroundColor: 'transparent',
-  perspective: '1000px',
-  width: '100%',
-  height: '100%',
-});
-
-const FlipCardInner = styled('div')(({ flipped }) => ({
-  position: 'relative',
-  width: '100%',
-  height: '100%',
-  transition: 'transform 0.6s',
-  transformStyle: 'preserve-3d',
-  transform: flipped ? 'rotateY(180deg)' : 'rotateY(0)',
-}));
-
-const FlipCardFront = styled(Card)({
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  backfaceVisibility: 'hidden',
-  display: 'flex',
-  flexDirection: 'column',
-});
-
-const FlipCardBack = styled(Card)({
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  backfaceVisibility: 'hidden',
-  transform: 'rotateY(180deg)',
-  overflow: 'auto',
-});
 
 const ProductCard = ({
-  product,
-  isSelected,
-  onSelect,
-  onEdit,
-  onDelete,
-  onAddToCart,
-  onOpenSales,
+  product = {},
+  isSelected = false,
+  onSelect = () => {},
+  onEdit = () => {},
+  onDelete = () => {},
+  onAddToCart = () => {},
+  onOpenSales = () => {},
   showInventory = false
 }) => {
-  const [flipped, setFlipped] = useState(false);
-  const availableStock = product.stock - (product.details?.totalSold || 0);
-  const isSoldOut = availableStock <= 0;
+  const [expanded, setExpanded] = useState(false);
 
-  const handleFlip = (e) => {
-    // Don't flip if clicking on interactive elements
-    if (e.target.closest('button, [role="button"], input')) {
-      return;
-    }
-    setFlipped(!flipped);
-  };
+  // Mirror GridView logic
+  const soldCount = product.sold ?? product.details?.totalSold ?? 0;
+  const availableStock = (product.stock || 0) - soldCount;
+  const inCartCount   = product.inCartQuantity || 0;
+  const isSoldOut     = availableStock <= 0;
 
   return (
-    <FlipCard>
-      <FlipCardInner flipped={flipped}>
-        {/* Front of the card */}
-        <FlipCardFront 
-          sx={{ 
-            border: isSelected ? '2px solid #1976d2' : '1px solid rgba(0, 0, 0, 0.12)'
-          }}
-        >
-          <CardActionArea onClick={handleFlip} sx={{ flexGrow: 1 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                <Checkbox
-                  checked={isSelected}
-                  onChange={(e) => onSelect(product.id, e.target.checked)}
-                  onClick={(e) => e.stopPropagation()}
-                  sx={{ mr: 1 }}
-                />
-                
-                <CardMedia
-                  component="img"
-                  sx={{ 
-                    width: 80, 
-                    height: 80, 
-                    objectFit: 'contain',
-                    mr: 2,
-                    borderRadius: 1
-                  }}
-                  image={product.image || '/placeholder-product.png'}
-                  alt={product.name}
-                  onError={(e) => {
-                    e.target.src = '/placeholder-product.png';
-                  }}
-                />
-                
-                <Box sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="h6" component="div">
-                        {product.name || 'Unnamed Product'}
-                      </Typography>
-                      {showInventory && (
-                        <Chip 
-                          label={product.inventory || 'Unknown'} 
-                          size="small" 
-                          sx={{ mt: 0.5 }}
-                        />
-                      )}
-                    </Box>
-                    
-                    <Typography variant="h6" color="primary">
-                      ${(product.price || 0).toFixed(2)}
-                    </Typography>
-                  </Box>
-                  
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    mt: 1
-                  }}>
-                    <Typography 
-                      variant="body2" 
-                      color={availableStock > 0 ? 'text.primary' : 'error'}
-                    >
-                      Stock: {availableStock}
-                    </Typography>
-                    
-                    <Box>
-                      <ButtonGroup size="small" sx={{ mr: 1 }}>
-                        <Button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAddToCart(product.id, (product.inCart || 0) - 1);
-                          }}
-                          disabled={(product.inCart || 0) <= 0 || isSoldOut}
-                        >
-                          <RemoveIcon />
-                        </Button>
-                        <Button disabled>
-                          <Badge 
-                            badgeContent={product.inCart || 0} 
-                            color="primary"
-                            anchorOrigin={{
-                              vertical: 'bottom',
-                              horizontal: 'right',
-                            }}
-                          >
-                            <CartIcon />
-                          </Badge>
-                        </Button>
-                        <Button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAddToCart(product.id, (product.inCart || 0) + 1);
-                          }}
-                          disabled={(product.inCart || 0) >= availableStock || isSoldOut}
-                        >
-                          <AddIcon />
-                        </Button>
-                      </ButtonGroup>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </CardActionArea>
-          
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            p: 1,
-            borderTop: '1px solid rgba(0, 0, 0, 0.12)'
-          }}>
-            <IconButton 
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenSales(product);
-              }}
-              color={isSoldOut ? "error" : "primary"}
-              disabled={isSoldOut}
-              title={isSoldOut ? "Sold Out" : "Record Sale"}
-            >
-              <SalesIcon />
-            </IconButton>
-            
-            <Box>
-              <IconButton 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(product);
-                }}
-                size="small" 
-                sx={{ mr: 1 }}
-              >
-                <EditIcon color="primary" fontSize="small" />
-              </IconButton>
-              <IconButton 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(product.id);
-                }}
-                size="small"
-              >
-                <DeleteIcon color="error" fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-        </FlipCardFront>
+    <Card
+      sx={{
+        width: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        border: isSelected
+          ? '2px solid #1976d2'
+          : '1px solid rgba(0, 0, 0, 0.12)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: 3,
+          transform: 'translateY(-2px)'
+        }
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          p: 1,
+          borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
+        }}
+      >
+        <Checkbox
+          checked={isSelected}
+          onChange={(e) => onSelect(product.id, e.target.checked)}
+          size="small"
+        />
+        {showInventory && (
+          <Chip
+            label={product.inventory ?? '—'}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        )}
+      </Box>
 
-        {/* Back of the card */}
-        <FlipCardBack>
-          <CardActionArea onClick={handleFlip} sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+      {/* Image */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+        <Avatar
+          src={product.image || '/placeholder-product.png'}
+          alt={product.name}
+          sx={{ width: 120, height: 120, border: '1px solid rgba(0,0,0,0.12)' }}
+          onError={(e) => {
+            e.target.src = '/placeholder-product.png';
+          }}
+        />
+      </Box>
+
+      {/* Content */}
+      <CardContent sx={{ flexGrow: 1, pt: 2, px: 2, pb: 2 }}>
+        <Box sx={{ textAlign: 'center', mb: 1 }}>
+          <Typography variant="h6" noWrap title={product.name}>
+            {product.name || 'Unnamed Product'}
+          </Typography>
+          <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
+            ${(product.price ?? 0).toFixed(2)}
+          </Typography>
+        </Box>
+
+        <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <Typography
+            variant="body2"
+            color={availableStock > 0 ? 'success.main' : 'error.main'}
+            sx={{ fontWeight: 'medium' }}
+          >
+            {availableStock > 0
+              ? `${availableStock} Available`
+              : 'Out of Stock'}
+          </Typography>
+        </Box>
+
+        {/* Cart Controls */}
+        <Paper elevation={1} sx={{ p: 0.5, borderRadius: 2, mb: 2 }}>
+          <ButtonGroup size="small" variant="outlined" sx={{ width: '100%' }}>
+            <Button
+              onClick={() =>
+                onAddToCart(product.id, inCartCount - 1)
+              }
+              disabled={inCartCount <= 0 || isSoldOut}
+            >
+              <RemoveIcon />
+            </Button>
+            <Button disabled sx={{ width: 36 }}>
+              {inCartCount}
+            </Button>
+            <Button
+              onClick={() =>
+                onAddToCart(product.id, inCartCount + 1)
+              }
+              disabled={inCartCount >= availableStock || isSoldOut}
+            >
+              <AddIcon />
+            </Button>
+          </ButtonGroup>
+        </Paper>
+
+        {/* Expand/Collapse */}
+        <Box sx={{ mb: 1, width: '100%' }}>
+          <Button
+            onClick={() => setExpanded(!expanded)}
+            endIcon={
+              expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />
+            }
+            size="small"
+            fullWidth
+          >
+            {expanded ? 'Hide Details' : 'Show Details'}
+          </Button>
+          <Collapse in={expanded} timeout="auto" unmountOnExit>
+            <Box
+              sx={{
+                width: '100%',
+                mt: 1,
+                p: 2,
+                bgcolor: 'grey.50',
+                borderRadius: 1
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                gutterBottom
+                color="primary"
+              >
                 Product Details
               </Typography>
-              <Divider sx={{ mb: 2 }} />
-              
-              <Box sx={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(2, 1fr)', 
-                gap: 2
-              }}>
+              <Divider sx={{ mb: 1 }} />
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2,1fr)',
+                  gap: 1,
+                  fontSize: '0.875rem'
+                }}
+              >
                 <Box>
-                  <Typography variant="body2">
-                    <strong>Name:</strong> {product.name}
+                  <Typography variant="caption" display="block">
+                    <strong>All Time Total Stock:</strong> {product.stock ?? 0}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Price:</strong> ${(product.price || 0).toFixed(2)}
+                  <Typography variant="caption" display="block">
+                    <strong>In Transit:</strong>{' '}
+                    {product.details?.inTransit ?? 0}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Total Stock:</strong> {product.stock}
+                  <Typography variant="caption" display="block">
+                    <strong>Delivered:</strong>{' '}
+                    {product.details?.delivered ?? 0}
                   </Typography>
-                  {showInventory && (
-                    <Typography variant="body2">
-                      <strong>Inventory:</strong> {product.inventory || 'Unknown'}
-                    </Typography>
-                  )}
                 </Box>
-                
                 <Box>
-                  <Typography variant="body2">
-                    <strong>In Transit:</strong> {product.details?.inTransit || 0}
+                  <Typography variant="caption" display="block">
+                    <strong>Total Sold:</strong>{' '}
+                    {product.sold ?? product.details?.totalSold ?? 0}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Delivered:</strong> {product.details?.delivered || 0}
+                  <Typography variant="caption" display="block">
+                    <strong>Yet to Dispatch:</strong>{' '}
+                    {product.details?.yetToDispatch ?? 0}
                   </Typography>
-                  <Typography variant="body2">
-                    <strong>Total Sold:</strong> {product.details?.totalSold || 0}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Available:</strong> {availableStock}
+                  <Typography variant="caption" display="block">
+                    <strong>Delivering Today:</strong>{' '}
+                    {product.details?.deliveringToday ?? 0}
                   </Typography>
                 </Box>
               </Box>
-              
-              <Typography variant="caption" display="block" sx={{ mt: 2 }}>
-                Click anywhere to flip back
-              </Typography>
-            </CardContent>
-          </CardActionArea>
-        </FlipCardBack>
-      </FlipCardInner>
-    </FlipCard>
+            </Box>
+          </Collapse>
+        </Box>
+      </CardContent>
+
+      {/* Actions */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          p: 1,
+          borderTop: '1px solid rgba(0,0,0,0.08)',
+          bgcolor: 'grey.50'
+        }}
+      >
+        <Button
+          onClick={() => onOpenSales(product)}
+          startIcon={<SalesIcon />}
+          variant={isSoldOut ? 'outlined' : 'contained'}
+          color={isSoldOut ? 'error' : 'primary'}
+          disabled={isSoldOut}
+          size="small"
+          sx={{ flex: 1, mr: 1 }}
+        >
+          {isSoldOut ? 'Sold Out' : 'Record Sale'}
+        </Button>
+        <Box>
+          <IconButton
+            onClick={() => onEdit(product)}
+            size="small"
+            color="primary"
+            sx={{ mr: 0.5 }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={() => onDelete(product.id)}
+            size="small"
+            color="error"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
+    </Card>
   );
 };
 
@@ -322,20 +293,40 @@ const ProductsBlockView = ({
     );
   }
 
-  if (!products || products.length === 0) {
+  if (!products.length) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="h6">No products found</Typography>
-        <Typography variant="body1">Add a product to get started</Typography>
+      <Box
+        sx={{
+          p: 4,
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}
+      >
+        <Typography variant="h6" color="text.secondary">
+          No products found
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Add a product to get started
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, p: 1 }}>
       <Grid container spacing={3}>
         {products.map((product) => (
-          <Grid item xs={12} sm={6} md={4} key={product.id || Math.random()}>
+          <Grid
+            item
+            key={product.id}
+            xs={12}
+            sm={6}
+            md={4}
+            lg={3}
+          >
             <ProductCard
               product={product}
               isSelected={selectedProducts.includes(product.id)}

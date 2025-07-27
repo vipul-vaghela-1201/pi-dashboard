@@ -7,19 +7,7 @@ export const InventoryProvider = ({ children }) => {
   const [state, setState] = useState(() => {
     // Load from localStorage if available
     const savedData = localStorage.getItem(STORAGE_KEY);
-  //   return savedData ? JSON.parse(savedData) : {
-  //     inventories: ["Default Inventory", "Secondary Inventory"],
-  //     selectedInventory: "Default Inventory",
-  //     allProducts: {
-  //       "Default Inventory": [],
-  //       "Secondary Inventory": []
-  //     },
-  //     productsData: {
-  //       "Default Inventory": [],
-  //       "Secondary Inventory": []
-  //     }
-  //   };
-  // });
+
     return savedData ? JSON.parse(savedData) : {
         inventories: ["Default Inventory", "Secondary Inventory"],
         selectedInventory: "Default Inventory",
@@ -27,6 +15,7 @@ export const InventoryProvider = ({ children }) => {
           "Default Inventory": [],
           "Secondary Inventory": []
         },
+        // In the initial state
         productsData: {
           "Default Inventory": [
             {
@@ -41,7 +30,9 @@ export const InventoryProvider = ({ children }) => {
                 inTransit: 0,
                 delivered: 0,
                 totalSold: 0,
-                deliveringToday: 0
+                deliveringToday: 0,
+                yetToDispatch: 0,
+                shipments: [] // Array of {quantity, shipmentDate}
               }
             }
           ],

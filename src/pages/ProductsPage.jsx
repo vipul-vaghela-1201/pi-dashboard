@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useInventory } from '../hooks/useInventory';
 import ProductsFilterBar from '../components/products/ProductsFilterBar';
@@ -23,59 +23,26 @@ const ProductsPage = () => {
   const [currentProduct, setCurrentProduct] = useState(null);
   const [currentSaleProduct, setCurrentSaleProduct] = useState(null);
   
-  // Get products based on selected inventory
-  const products = useMemo(() => {
-    return selectedInventory === 'All Inventory' 
-      ? getAllProducts() 
-      : productsData[selectedInventory] || [];
-  }, [productsData, selectedInventory, getAllProducts]);
-
-  // Calculate available stock for a product
-  const calculateAvailableStock = (product) => {
-    return product.stock - product.details.totalSold;
-  };
-
   // Update the title to reflect the view
   const pageTitle = selectedInventory === 'All Inventory' 
     ? "All Products Across Inventories" 
     : `${selectedInventory} Products`;
 
-  // Daily delivery processing
-  useEffect(() => {
-    const checkDeliveries = () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    const products = useMemo(() => {
+    return selectedInventory === 'All Inventory' 
+      ? getAllProducts() 
+      : productsData[selectedInventory] || [];
+  }, [productsData, selectedInventory, getAllProducts]);
 
-      const updatedProducts = products.map(p => {
-        if (p.details.deliveringToday > 0) {
-          return {
-            ...p,
-            details: {
-              ...p.details,
-              delivered: p.details.delivered + p.details.deliveringToday,
-              inTransit: p.details.inTransit - p.details.deliveringToday,
-              deliveringToday: 0
-            }
-          };
-        }
-        return p;
-      });
+  const calculateAvailableStock = (product) => {
+    return product.stock - (product.details?.totalSold || 0);
+  };
 
-      updateProducts(selectedInventory, updatedProducts);
-    };
-
-    const timer = setInterval(checkDeliveries, 24 * 60 * 60 * 1000);
-    return () => clearInterval(timer);
-  }, [products, selectedInventory, updateProducts]);
-
-  // Update the updateLocalProducts function to handle all inventories
-  const updateLocalProducts = (updatedProducts) => {
+  const updateLocalProducts = useCallback((updatedProducts) => {
     if (selectedInventory === 'All Inventory') {
-      // For all inventory view, we need to update each product in its respective inventory
       const inventoryUpdates = {};
       
       updatedProducts.forEach(product => {
-        // Use the inventory property we added to each product
         const inventory = product.inventory;
         if (inventory && inventory !== 'All Inventory') {
           if (!inventoryUpdates[inventory]) {
@@ -90,14 +57,118 @@ const ProductsPage = () => {
         }
       });
       
-      // Apply all updates
       Object.entries(inventoryUpdates).forEach(([inventory, products]) => {
         updateProducts(inventory, products);
       });
     } else {
-      // Normal single inventory update
       updateProducts(selectedInventory, updatedProducts);
     }
+  }, [selectedInventory, productsData, updateProducts]);
+
+  useEffect(() => {
+    const checkDeliveries = () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const updatedProducts = products.map(p => {
+        let deliveringTodayCount = 0;
+        const updatedShipments = (p.details.shipments || []).map(shipment => {
+          const shipmentDate = new Date(shipment.shipmentDate);
+          shipmentDate.setHours(0, 0, 0, 0);
+          
+          if (shipmentDate.getTime() === today.getTime() && !shipment.delivered) {
+            deliveringTodayCount += shipment.quantity;
+          }
+
+          if (shipmentDate.getTime() <= today.getTime() && !shipment.delivered) {
+            return {...shipment, delivered: true};
+          }
+          return shipment;
+        });
+
+        const statusCounts = (p.details.shipments || []).reduce((acc, shipment) => {
+          const shipmentDate = new Date(shipment.shipmentDate);
+          shipmentDate.setHours(0, 0, 0, 0);
+          
+          if (shipment.delivered) {
+            acc.delivered += shipment.quantity;
+          } else if (shipmentDate.getTime() <= today.getTime()) {
+            acc.inTransit += shipment.quantity;
+          } else {
+            acc.yetToDispatch += shipment.quantity;
+          }
+          return acc;
+        }, { inTransit: 0, delivered: 0, yetToDispatch: 0 });
+
+        return {
+          ...p,
+          details: {
+            ...p.details,
+            shipments: updatedShipments,
+            inTransit: statusCounts.inTransit,
+            delivered: statusCounts.delivered,
+            yetToDispatch: statusCounts.yetToDispatch,
+            deliveringToday: deliveringTodayCount
+          }
+        };
+      });
+
+      updateLocalProducts(updatedProducts);
+    };
+
+    const timer = setInterval(checkDeliveries, 24 * 60 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [products, updateLocalProducts]);
+
+  const handleCompleteSale = (saleData) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const deliveryDate = new Date(saleData.deliveryDate);
+    deliveryDate.setHours(0, 0, 0, 0);
+    
+    const isDeliveringToday = deliveryDate.getTime() === today.getTime();
+    const isPastDelivery = deliveryDate.getTime() < today.getTime();
+    const isFutureDelivery = deliveryDate.getTime() > today.getTime();
+
+    const updatedProducts = products.map(p => {
+      if (p.id === saleData.productId) {
+        const saleQuantity = Math.min(
+          p.stock - p.details.totalSold, 
+          saleData.quantity
+        );
+        
+        const newShipment = {
+          quantity: saleQuantity,
+          shipmentDate: saleData.shipmentDate,
+          delivered: isPastDelivery
+        };
+
+        return {
+          ...p,
+          details: {
+            ...p.details,
+            shipments: [...(p.details.shipments || []), newShipment],
+            totalSold: p.details.totalSold + saleQuantity,
+            ...(isPastDelivery && {
+              delivered: p.details.delivered + saleQuantity
+            }),
+            ...(isDeliveringToday && {
+              inTransit: p.details.inTransit + saleQuantity,
+              deliveringToday: p.details.deliveringToday + saleQuantity
+            }),
+            ...(isFutureDelivery && {
+              yetToDispatch: (p.details.yetToDispatch || 0) + saleQuantity
+            })
+          }
+        };
+      }
+      return p;
+    });
+
+    updateLocalProducts(updatedProducts);
+    setOpenSalesModal(false);
+    setCurrentSaleProduct(null);
   };
 
   const handleSelectAll = (checked) => {
@@ -131,69 +202,9 @@ const ProductsPage = () => {
     setOpenModal(true);
   };
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    setCurrentProduct(null);
-  };
-
   const handleOpenSales = (product) => {
     setCurrentSaleProduct(product);
     setOpenSalesModal(true);
-  };
-
-  const handleCompleteSale = (saleData) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const deliveryDate = new Date(saleData.deliveryDate);
-    deliveryDate.setHours(0, 0, 0, 0);
-    
-    const isDeliveringToday = deliveryDate.getTime() === today.getTime();
-    const isPastDelivery = deliveryDate.getTime() < today.getTime();
-
-    const updatedProducts = products.map(p => {
-      if (p.id === saleData.productId) {
-        const saleQuantity = Math.min(
-          p.stock - p.details.totalSold, 
-          saleData.quantity
-        );
-        
-        if (isPastDelivery) {
-          return {
-            ...p,
-            details: {
-              ...p.details,
-              delivered: p.details.delivered + saleQuantity,
-              totalSold: p.details.totalSold + saleQuantity
-            }
-          };
-        } else if (isDeliveringToday) {
-          return {
-            ...p,
-            details: {
-              ...p.details,
-              inTransit: p.details.inTransit + saleQuantity,
-              deliveringToday: p.details.deliveringToday + saleQuantity,
-              totalSold: p.details.totalSold + saleQuantity
-            }
-          };
-        } else {
-          return {
-            ...p,
-            details: {
-              ...p.details,
-              inTransit: p.details.inTransit + saleQuantity,
-              totalSold: p.details.totalSold + saleQuantity
-            }
-          };
-        }
-      }
-      return p;
-    });
-
-    updateLocalProducts(updatedProducts);
-    setOpenSalesModal(false);
-    setCurrentSaleProduct(null);
   };
 
   const handleSaveProduct = (productData, isNewProduct) => {
@@ -233,9 +244,15 @@ const ProductsPage = () => {
     setSelectedProducts(prev => prev.filter(pId => pId !== id));
   };
 
-  const filteredProducts = products.filter(p => 
-  p && p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase())
-);
+  const filteredProducts = useMemo(() => {
+    const baseProducts = selectedInventory === 'All Inventory' 
+      ? getAllProducts() 
+      : productsData[selectedInventory] || [];
+      
+    return baseProducts.filter(p => 
+      p && p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [productsData, selectedInventory, searchQuery, getAllProducts]);
 
   return (
     <Box sx={{ p: 2 }}>
@@ -267,8 +284,8 @@ const ProductsPage = () => {
           onAddToCart={handleAddToCart}
           onOpenSales={handleOpenSales}
           isAllInventoryView={selectedInventory === 'All Inventory'}
-          isLoading={false} // Set to true when loading
-          error={null} // Set to error object if there's an error
+          isLoading={false}
+          error={null}
         />
       ) : (
         <ProductsGridView
@@ -280,46 +297,17 @@ const ProductsPage = () => {
           onAddToCart={handleAddToCart}
           onOpenSales={handleOpenSales}
           isAllInventoryView={selectedInventory === 'All Inventory'}
-          isLoading={false} // Set to true when loading
-          error={null} // Set to error object if there's an error
+          isLoading={false}
+          error={null}
         />
       )}
-
-      {/* {viewMode === 'grid' ? (
-        <ProductsGridView
-          products={filteredProducts}
-          selectedProducts={selectedProducts}
-          onSelectProduct={handleSelectProduct}
-          onEditProduct={handleOpenModal}
-          onDeleteProduct={handleDeleteProduct}
-          onAddToCart={handleAddToCart}
-          onOpenSales={handleOpenSales}
-          isAllInventoryView={selectedInventory === 'All Inventory'}
-        />
-      ) : (
-        <ProductsBlockView />
-      )}
-
-      {viewMode === 'block' ? (
-        <ProductsBlockView
-          products={filteredProducts}
-          selectedProducts={selectedProducts}
-          onSelectProduct={handleSelectProduct}
-          onEditProduct={handleOpenModal}
-          onDeleteProduct={handleDeleteProduct}
-          onAddToCart={handleAddToCart}
-          onOpenSales={handleOpenSales}
-          isAllInventoryView={selectedInventory === 'All Inventory'}
-          isLoading={false} // Set to true when loading
-          error={null} // Set to error object if there's an error
-        />
-      ) : (
-        <ProductsGridView/>
-      )} */}
 
       <ProductFormModal
         open={openModal}
-        onClose={handleCloseModal}
+        onClose={() => {
+          setOpenModal(false);
+          setCurrentProduct(null);
+        }}
         product={currentProduct}
         products={products}
         onSave={handleSaveProduct}

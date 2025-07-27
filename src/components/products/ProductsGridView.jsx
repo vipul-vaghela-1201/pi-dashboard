@@ -140,6 +140,14 @@ const ProductRow = ({
                   <Typography variant="body2">Total Sold: {product.details?.totalSold || 0}</Typography>
                   <Typography variant="body2">Delivering Today: {product.details?.deliveringToday || 0}</Typography>
                 </Box>
+                <Box>
+                  <Typography variant="body2">
+                    <strong>Yet to Dispatch:</strong> {product.details?.yetToDispatch || 0}
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    <strong>All Time Total Stock:</strong> {product.stock ?? 0}
+                  </Typography>
+                </Box>
               </Box>
             </Box>
           </Collapse>

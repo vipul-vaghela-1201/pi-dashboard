@@ -59,14 +59,6 @@ const ProductFormModal = ({ open, onClose, product, products, onSave }) => {
     }
   }, [open, product, products]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'price' || name === 'stock' ? parseFloat(value) || 0 : value
-    }));
-  };
-
   const handleProductSelect = (event, value) => {
     if (value) {
       const selectedProduct = products.find(p => p.id === value.id);
@@ -185,10 +177,21 @@ const ProductFormModal = ({ open, onClose, product, products, onSave }) => {
             label="Price"
             type="number"
             value={formData.price}
-            onChange={handleChange}
+            onChange={(e) => {
+              const value = parseFloat(e.target.value) || 0;
+              setFormData(prev => ({
+                ...prev,
+                price: Math.max(0, value)
+              }));
+            }}
             fullWidth
             margin="normal"
-            InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+            InputProps={{
+              inputProps: { 
+                min: 0,
+                step: 0.01
+              }
+            }}
             required
             disabled={priceDisabled || loading}
           />
@@ -198,10 +201,21 @@ const ProductFormModal = ({ open, onClose, product, products, onSave }) => {
             label={product ? "Quantity to Add" : "Initial Stock"}
             type="number"
             value={formData.stock}
-            onChange={handleChange}
+            onChange={(e) => {
+              const value = parseFloat(e.target.value) || 0;
+              setFormData(prev => ({
+                ...prev,
+                stock: Math.max(0, value)
+              }));
+            }}
             fullWidth
             margin="normal"
-            InputProps={{ inputProps: { min: 0 } }}
+            InputProps={{
+              inputProps: { 
+                min: 0,
+                step: product ? 1 : 0.1 // Allow decimals for initial stock
+              }
+            }}
             required
             disabled={loading}
           />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -10,8 +10,9 @@ import {
   Typography,
   InputAdornment
 } from '@mui/material';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 const SalesModal = ({ 
   open, 
@@ -24,9 +25,26 @@ const SalesModal = ({
   const [deliveryDate, setDeliveryDate] = useState(new Date());
   const [deliveryBy, setDeliveryBy] = useState('');
 
-  const availableStock = product ? (product.stock - (product.details.inTransit + product.details.delivered)) : 0;
+  //const availableStock = product ? (product.stock - (product.details?.inTransit || 0 + product.details?.delivered || 0)) : 0;
+
+  const availableStock = product ? (product.stock - (product.details?.totalSold || 0)) : 0;
+
+  const resetForm = () => {
+    setQuantity(1);
+    setShipmentDate(new Date());
+    setDeliveryDate(new Date());
+    setDeliveryBy('');
+  };
+
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open]);
 
   const handleSubmit = () => {
+    if (!product) return;
+
     const saleData = {
       productId: product.id,
       quantity: Math.min(quantity, availableStock),
@@ -35,6 +53,7 @@ const SalesModal = ({
       deliveryBy,
       totalAmount: Math.min(quantity, availableStock) * product.price
     };
+
     onCompleteSale(saleData);
     onClose();
   };
@@ -68,22 +87,24 @@ const SalesModal = ({
               label="Shipment Date"
               value={shipmentDate}
               onChange={(newValue) => setShipmentDate(newValue)}
-              renderInput={(params) => (
-                <TextField {...params} fullWidth margin="normal" />
-              )}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  margin: 'normal'
+                }
+              }}
             />
 
             <DatePicker
               label="Delivery Date"
               value={deliveryDate}
               onChange={(newValue) => setDeliveryDate(newValue)}
-              renderInput={(params) => (
-                <TextField 
-                  {...params} 
-                  fullWidth 
-                  margin="normal"
-                />
-              )}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  margin: 'normal'
+                }
+              }}
             />
 
             <TextField
